@@ -1,0 +1,4 @@
+Github, cli setup. https://github.com/saarbyrne/NoSh
+Supabase, cli setup. https://hbryhtpqdgmywrnapaaf.supabase.co
+Vercel. https://vercel.com/saarbyrnes-projects/nosh
+reference:  cd "/Users/saarbyrne/Documents/GitHub/NoSh/web" && npm run build

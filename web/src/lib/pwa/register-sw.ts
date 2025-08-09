@@ -2,12 +2,15 @@ import { Workbox } from "workbox-window";
 
 export function registerServiceWorker() {
   if (typeof window === "undefined") return;
+  // Register only in production to avoid dev hydration/cache issues
+  if (process.env.NODE_ENV !== "production") return;
   if ("serviceWorker" in navigator) {
-    const wb = new Workbox("/sw.js");
-    wb.addEventListener("activated", () => {
-      // no-op
-    });
-    wb.register();
+    try {
+      const wb = new Workbox("/sw.js");
+      wb.register();
+    } catch {
+      // ignore SW errors in dev
+    }
   }
 }
 

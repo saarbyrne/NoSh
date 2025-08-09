@@ -28,11 +28,22 @@ export async function POST(req: NextRequest) {
 
     const text = await res.text();
     const isJson = res.headers.get("content-type")?.includes("application/json");
-    const baseBody = isJson ? (text ? JSON.parse(text) : {}) : { text };
-    const body = res.ok
-      ? baseBody
-      : { ...baseBody, functionName, upstreamUrl };
-    return NextResponse.json(body, { status: res.status });
+    let parsed: unknown = {};
+    try {
+      parsed = isJson && text ? JSON.parse(text) : {};
+    } catch {
+      parsed = {};
+    }
+    // Always include debug context to simplify troubleshooting
+    const payload = {
+      ok: res.ok,
+      status: res.status,
+      functionName,
+      upstreamUrl,
+      parsed,
+      rawText: isJson ? undefined : text || undefined,
+    };
+    return NextResponse.json(payload, { status: res.status });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }

@@ -1,20 +1,40 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getSupabaseClient } from "@/lib/supabaseClient";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [msg, setMsg] = useState("");
+  const router = useRouter();
+  const search = useSearchParams();
+  const nextPath = (search?.get("next") ?? "/upload");
+
+  useEffect(() => {
+    const client = getSupabaseClient();
+    // If already logged in, bounce to next
+    client.auth.getSession().then(({ data }) => {
+      if (data.session) router.replace(nextPath);
+    });
+    const { data: sub } = client.auth.onAuthStateChange((_e, session) => {
+      if (session) router.replace(nextPath);
+    });
+    return () => {
+      sub.subscription.unsubscribe();
+    };
+  }, [router, nextPath]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setMsg("Sending magic link...");
+    const site = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== "undefined" ? window.location.origin : "");
+    const redirect = `${site}${nextPath}`;
     const { error } = await getSupabaseClient().auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
+        emailRedirectTo: redirect,
       },
     });
     if (error) setMsg(error.message);

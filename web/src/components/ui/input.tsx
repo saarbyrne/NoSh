@@ -8,12 +8,16 @@ type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className = "", label, hint, id, ...props }, ref) => {
-    const inputId = id ?? `input-${Math.random().toString(36).slice(2, 8)}`;
+    // Always call useId, then prefer provided id. This avoids hydration mismatches.
+    const autoId = React.useId();
+    const inputId = id ?? autoId;
     const hintId = hint ? `${inputId}-hint` : undefined;
     return (
       <div className="w-full">
         {label ? (
-          <span className="block text-sm font-medium mb-1">{label}</span>
+          <label htmlFor={inputId} className="block text-sm font-medium mb-1">
+            {label}
+          </label>
         ) : null}
         <input
           id={inputId}

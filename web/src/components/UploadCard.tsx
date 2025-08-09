@@ -14,7 +14,7 @@ export default function UploadCard() {
     const now = new Date();
     try {
       setStatus("Requesting upload URL...");
-      const { photo_id, signed_url } = await createUploadUrl({
+      const { photo_id, signed_url, storage_path } = await createUploadUrl({
         month_ym: formatMonthYM(now),
         taken_at: toIsoSeconds(now),
       });
@@ -27,9 +27,12 @@ export default function UploadCard() {
       });
 
       setStatus("Processing...");
-      await processPhoto({ photo_id });
+      // Build a public signed URL reference for the analyzer. Reuse the signed_url without query for path.
+      const photoUrl = signed_url.split("?")[0];
+      const result = await processPhoto({ photo_id, photo_url: photoUrl });
 
       setStatus("Done ✅");
+      console.log("analyze-photo result", result);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error";
       setStatus(message);

@@ -59,16 +59,15 @@ export async function createUploadUrl(params: {
   return await invokeEdgeFunction<UploadUrlResponse>(functionName, params, { action });
 }
 
-export async function processPhoto(params: { photo_id: string }): Promise<void> {
+export async function processPhoto(params: { photo_id: string; photo_url?: string }): Promise<unknown> {
   const functionName =
     process.env.NEXT_PUBLIC_SUPABASE_FUNC_PROCESS || "process-photo";
   const action = process.env.NEXT_PUBLIC_SUPABASE_FUNC_PROCESS_ACTION;
   const override = process.env.NEXT_PUBLIC_SUPABASE_FUNC_OVERRIDE_URL;
   if (override) {
-    await invokeEdgeFunction<void>(override, { ...params, fn: functionName, action }, { action: undefined });
-    return;
+    return await invokeEdgeFunction<unknown>(override, { ...params, fn: functionName, action }, { action: undefined });
   }
-  await invokeEdgeFunction<void>(functionName, params, { action });
+  return await invokeEdgeFunction<unknown>(functionName, params, { action });
 }
 
 export async function summarizeDay(): Promise<void> {

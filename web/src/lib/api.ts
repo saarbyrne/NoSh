@@ -109,19 +109,6 @@ export async function savePhotoItems(
   await invokeEdgeFunction(override, { ...body, fn: functionName }, { action: undefined });
 }
 
-export async function createPhotoRow(params: {
-  id: string;
-  storage_path: string;
-  taken_at: string;
-}): Promise<void> {
-  const client = getSupabaseClient();
-  const { error } = await client.from("photos").insert({
-    id: params.id,
-    storage_path: params.storage_path,
-    taken_at: params.taken_at,
-    status: "uploaded",
-  } as unknown as Record<string, unknown>);
-  if (error) throw error;
-}
+// Client-side insert to `photos` is intentionally removed to avoid RLS 403s.
 
 

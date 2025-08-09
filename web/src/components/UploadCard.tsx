@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { createUploadUrl, processPhoto, savePhotoItems, createPhotoRow } from "@/lib/api";
+import { createUploadUrl, processPhoto, savePhotoItems } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -51,12 +51,7 @@ export default function UploadCard() {
       setStatus("Processing...");
       // Build a public signed URL reference for the analyzer. Reuse the signed_url without query for path.
       const photoUrl = signed_url?.includes("?") ? signed_url.split("?")[0] : signed_url;
-      // Persist minimal photo row if required by RLS on photo_items
-      try {
-        await createPhotoRow({ id: photo_id, storage_path: new URL(photoUrl).pathname, taken_at: toIsoSeconds(now) });
-      } catch (e) {
-        console.warn("createPhotoRow failed (might already exist)", e);
-      }
+      // Photo row will be created server-side by save-photo-items function
       const result = await processPhoto({ photo_id, photo_url: photoUrl });
 
       setStatus("Done ✅");

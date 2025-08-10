@@ -1,0 +1,12 @@
+{
+  "build": {
+    "env": {
+      "CSS_TRANSFORMER_WASM": "1"
+    }
+  },
+  "functions": {
+    "**": {
+      "runtime": "nodejs20.x"
+    }
+  }
+}

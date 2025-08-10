@@ -1,11 +1,5 @@
 {
-  "version": 2,
-  "build": {
-    "env": {
-      "CSS_TRANSFORMER_WASM": "1"
-    }
-  },
-  "buildCommand": "npm ci --no-audit --no-fund && npm run vercel-build"
+  "version": 2
 }
 
 

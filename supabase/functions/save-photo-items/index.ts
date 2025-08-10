@@ -95,7 +95,7 @@ serve(async (req: Request) => {
       raw_label: it.raw_label,
       confidence: it.confidence,
       packaged: Boolean(it.packaged),
-      taxonomy_category: it.taxonomy_category ?? "unmapped",
+      taxonomy_category: classify(it.raw_label) ?? it.taxonomy_category ?? "unmapped",
     }));
 
     const { error: insertErr, count } = await supabase.from("photo_items").insert(mapped, { count: "exact" });
@@ -103,10 +103,71 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: insertErr.message, where: "photo_items" }), { status: 500, headers: { "Content-Type": "application/json" } });
     }
 
+    // Fire-and-forget summarize functions
+    try {
+      const dateStr = (taken_at ? new Date(taken_at) : new Date()).toISOString().slice(0, 10);
+      const ymStr = ym ?? dateStr.slice(0, 7);
+      const fnHeaders = { "Content-Type": "application/json", Authorization: `Bearer ${serviceRoleKey}` };
+      await fetch(`${supabaseUrl}/functions/v1/summarize-day`, {
+        method: "POST",
+        headers: fnHeaders,
+        body: JSON.stringify({ user_id, date: dateStr }),
+      }).catch(() => {});
+      await fetch(`${supabaseUrl}/functions/v1/summarize-month`, {
+        method: "POST",
+        headers: fnHeaders,
+        body: JSON.stringify({ user_id, month_ym: ymStr }),
+      }).catch(() => {});
+    } catch (_) {}
+
     return new Response(JSON.stringify({ ok: true, inserted: count ?? mapped.length }), { status: 200, headers: { "Content-Type": "application/json" } });
   } catch (err) {
     return new Response(JSON.stringify({ error: (err as Error).message }), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 });
+
+// Minimal in-function mapping of common labels → taxonomy categories.
+function classify(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  const key = raw.trim().toLowerCase();
+  const norm = key
+    .replace(/\([^)]*\)/g, " ") // remove parentheses content
+    .replace(/[^a-z0-9\s]/g, " ") // remove punctuation
+    .replace(/\s+/g, " ")
+    .trim();
+
+  // Heuristic contains-based mapping
+  if (norm.includes("banana")) return "fruit";
+  if (norm.includes("watermelon")) return "fruit";
+  if (norm.includes("apple")) return "fruit";
+  if (norm.includes("carrot")) return "vegetables";
+  if (norm.includes("orange") && norm.includes("juice")) return "sugary drinks";
+
+  const map: Record<string, string> = {
+    "strawberries": "fruit",
+    "banana": "fruit",
+    "apple": "fruit",
+    "watermelon": "fruit",
+    "orange juice": "sugary drinks",
+    "carrot": "vegetables",
+    "spinach": "vegetables",
+    "broccoli": "vegetables",
+    "cornflakes": "low-fibre cereals",
+    "bran flakes": "high-fibre cereals",
+    "cola": "sugary drinks",
+    "diet cola": "water",
+    "smoked bacon": "processed meats",
+    "tuna (canned in oil)": "oily fish",
+    "milk": "dairy",
+    "almonds": "nuts & seeds",
+    "chocolate": "sweets & desserts",
+    "french fries": "fried foods",
+    "whole wheat bread": "whole grains",
+    "white bread": "refined grains",
+    "coffee": "coffee/tea (unsweetened)",
+    "sweetened tea": "coffee/tea (sweetened)",
+  };
+  return map[key] || map[norm];
+}
 
 

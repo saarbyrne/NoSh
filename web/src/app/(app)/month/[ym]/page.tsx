@@ -1,4 +1,5 @@
-import MonthSummary from "@/components/MonthSummary";
+import RequireAuth from "@/components/RequireAuth";
+import MonthSummaryClient from "@/components/MonthSummaryClient";
 
 export default async function MonthPage({
   params,
@@ -7,10 +8,12 @@ export default async function MonthPage({
 }) {
   const { ym } = await params;
   return (
-    <div className="p-6">
-      <h1 className="text-xl font-semibold mb-4">Month {ym}</h1>
-      <MonthSummary />
-    </div>
+    <RequireAuth>
+      <div className="p-6">
+        <h1 className="text-xl font-semibold mb-4">Month {ym}</h1>
+        <MonthSummaryClient ym={ym} />
+      </div>
+    </RequireAuth>
   );
 }
 

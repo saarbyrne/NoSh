@@ -1,4 +1,5 @@
 {
+  "version": 2,
   "build": {
     "env": {
       "CSS_TRANSFORMER_WASM": "1"

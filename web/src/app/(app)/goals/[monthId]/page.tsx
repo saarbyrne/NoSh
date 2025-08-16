@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
 import RequireAuth from "@/components/RequireAuth";
+import Header from "@/components/Header";
 import Link from "next/link";
 
 interface Goal {
@@ -108,18 +109,18 @@ export default function GoalsPage({
 
   return (
     <RequireAuth>
-      <div className="p-6 space-y-6">
-        {/* Header with Navigation */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-xl font-semibold">
-              Monthly Goals - {monthId ? new Date(monthId + "-01").toLocaleDateString(undefined, { year: 'numeric', month: 'long' }) : 'Loading...'}
-            </h1>
-            <p className="text-sm text-muted mt-1">
+      <div className="min-h-screen bg-background">
+        <Header title={`Monthly Goals - ${monthId ? new Date(monthId + "-01").toLocaleDateString(undefined, { year: 'numeric', month: 'long' }) : 'Loading...'}`} />
+        <div className="pt-20 p-6 space-y-6">
+          {/* Subtitle */}
+          <div className="text-center">
+            <p className="text-sm text-muted">
               AI-generated personalized goals based on your food patterns
             </p>
           </div>
-          <div className="flex gap-2">
+          
+          {/* Navigation */}
+          <div className="flex justify-end gap-2">
             <Link href={`/day/${today}`}>
               <Button variant="outline" size="sm">
                 Today&apos;s Summary
@@ -136,120 +137,120 @@ export default function GoalsPage({
               </Button>
             </Link>
           </div>
-        </div>
 
-        {/* Error Display */}
-        {error && (
-          <Card className="border-destructive">
-            <CardContent className="pt-6">
-              <p className="text-destructive text-sm">{error}</p>
-            </CardContent>
-          </Card>
-        )}
+          {/* Error Display */}
+          {error && (
+            <Card className="border-destructive">
+              <CardContent className="pt-6">
+                <p className="text-destructive text-sm">{error}</p>
+              </CardContent>
+            </Card>
+          )}
 
-        {/* Loading State */}
-        {loading && (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
-                <p className="text-muted">Generating personalized goals...</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Goals Display */}
-        {!loading && goals && (
-          <div className="space-y-6">
-            <div className="grid gap-4">
-              {goals.map((goal, index) => (
-                <Card key={index} className="relative">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <Badge variant="outline" className="text-xs">
-                          Goal {index + 1}
-                        </Badge>
-                        <CardTitle className="text-lg">{goal.title}</CardTitle>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
-                        <span className="text-accent">Why</span>
-                        <Badge variant="secondary" className="text-xs">Motivation</Badge>
-                      </h4>
-                      <p className="text-sm text-muted leading-relaxed">{goal.why}</p>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
-                        <span className="text-accent">How</span>
-                        <Badge variant="secondary" className="text-xs">Strategy</Badge>
-                      </h4>
-                      <p className="text-sm text-muted leading-relaxed">{goal.how}</p>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
-                        <span className="text-accent">Fallback</span>
-                        <Badge variant="secondary" className="text-xs">Plan B</Badge>
-                      </h4>
-                      <p className="text-sm text-muted leading-relaxed">{goal.fallback}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {/* Save Button */}
+          {/* Loading State */}
+          {loading && (
             <Card>
               <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium">Save Your Goals</h3>
-                    <p className="text-sm text-muted">
-                      Save these goals to track your progress throughout the month
-                    </p>
-                  </div>
-                  <Button 
-                    onClick={handleSaveGoals} 
-                    disabled={saving}
-                    className="min-w-[120px]"
-                  >
-                    {saving ? (
-                      <div className="flex items-center gap-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        Saving...
-                      </div>
-                    ) : (
-                      "Save Goals"
-                    )}
-                  </Button>
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                  <p className="text-muted">Generating personalized goals...</p>
                 </div>
               </CardContent>
             </Card>
-          </div>
-        )}
+          )}
 
-        {/* No Goals State */}
-        {!loading && !goals && !error && (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center space-y-4">
-                <p className="text-muted">No goals generated yet.</p>
-                <p className="text-sm text-muted">
-                  Upload more photos to generate personalized goals based on your eating patterns.
-                </p>
-                <Link href="/upload">
-                  <Button>Upload Photo</Button>
-                </Link>
+          {/* Goals Display */}
+          {!loading && goals && (
+            <div className="space-y-6">
+              <div className="grid gap-4">
+                {goals.map((goal, index) => (
+                  <Card key={index} className="relative">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <Badge variant="outline" className="text-xs">
+                            Goal {index + 1}
+                          </Badge>
+                          <CardTitle className="text-lg">{goal.title}</CardTitle>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                          <span className="text-accent">Why</span>
+                          <Badge variant="secondary" className="text-xs">Motivation</Badge>
+                        </h4>
+                        <p className="text-sm text-muted leading-relaxed">{goal.why}</p>
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                          <span className="text-accent">How</span>
+                          <Badge variant="secondary" className="text-xs">Strategy</Badge>
+                        </h4>
+                        <p className="text-sm text-muted leading-relaxed">{goal.how}</p>
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                          <span className="text-accent">Fallback</span>
+                          <Badge variant="secondary" className="text-xs">Plan B</Badge>
+                        </h4>
+                        <p className="text-sm text-muted leading-relaxed">{goal.fallback}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-            </CardContent>
-          </Card>
-        )}
+
+              {/* Save Button */}
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium">Save Your Goals</h3>
+                      <p className="text-sm text-muted">
+                        Save these goals to track your progress throughout the month
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={handleSaveGoals} 
+                      disabled={saving}
+                      className="min-w-[120px]"
+                    >
+                      {saving ? (
+                        <div className="flex items-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Saving...
+                        </div>
+                      ) : (
+                        "Save Goals"
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* No Goals State */}
+          {!loading && !goals && !error && (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center space-y-4">
+                  <p className="text-muted">No goals generated yet.</p>
+                  <p className="text-sm text-muted">
+                    Upload more photos to generate personalized goals based on your eating patterns.
+                  </p>
+                  <Link href="/upload">
+                    <Button>Upload Photo</Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </RequireAuth>
   );

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import PhotoUploadForm from "@/components/PhotoUploadForm";
 import RequireAuth from "@/components/RequireAuth";
+import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import Link from "next/link";
@@ -84,21 +85,19 @@ export default function UploadPage() {
   return (
     <RequireAuth>
       <div className="min-h-screen bg-background">
-        <div className="p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h1 className="text-xl font-semibold">Log Your Day</h1>
-            <div className="flex gap-2">
-              <Link href={`/day/${today}`}>
-                <Button variant="secondary" className="text-xs">
-                  Today&apos;s Summary
-                </Button>
-              </Link>
-              <Link href={`/month/${currentMonth}`}>
-                <Button variant="secondary" className="text-xs">
-                  Monthly Summary
-                </Button>
-              </Link>
-            </div>
+        <Header title="Log Your Day" />
+        <div className="pt-20 p-4">
+          <div className="flex justify-end gap-2 mb-4">
+            <Link href={`/day/${today}`}>
+              <Button variant="secondary" className="text-xs">
+                Today&apos;s Summary
+              </Button>
+            </Link>
+            <Link href={`/month/${currentMonth}`}>
+              <Button variant="secondary" className="text-xs">
+                Monthly Summary
+              </Button>
+            </Link>
           </div>
         </div>
         

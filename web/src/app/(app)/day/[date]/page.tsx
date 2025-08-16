@@ -1,6 +1,7 @@
 "use client";
 import DaySummary from "@/components/DaySummary";
 import RequireAuth from "@/components/RequireAuth";
+import Header from "@/components/Header";
 import { useState, useEffect } from "react";
 
 export default function DayPage({
@@ -20,11 +21,11 @@ export default function DayPage({
 
   return (
     <RequireAuth>
-      <div className="p-6">
-        <h1 className="text-xl font-semibold mb-4">
-          Day Summary - {new Date(date).toLocaleDateString()}
-        </h1>
-        <DaySummary date={date} />
+      <div className="min-h-screen bg-background">
+        <Header title={`Day Summary - ${new Date(date).toLocaleDateString()}`} />
+        <div className="pt-20 p-6">
+          <DaySummary date={date} />
+        </div>
       </div>
     </RequireAuth>
   );

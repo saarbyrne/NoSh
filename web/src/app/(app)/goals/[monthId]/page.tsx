@@ -25,7 +25,7 @@ export default function GoalsPage({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
+  const { push } = useToast();
 
   useEffect(() => {
     params.then((p) => setMonthId(p.monthId));
@@ -62,18 +62,14 @@ export default function GoalsPage({
       } catch (e) {
         const message = e instanceof Error ? e.message : "Error generating goals";
         setError(message);
-        toast({
-          title: "Error",
-          description: message,
-          variant: "destructive",
-        });
+        push(`Error: ${message}`);
       } finally {
         setLoading(false);
       }
     };
 
     fetchGoals();
-  }, [monthId, toast]);
+  }, [monthId, push]);
 
   const handleSaveGoals = async () => {
     if (!monthId || !goals) return;
@@ -97,18 +93,11 @@ export default function GoalsPage({
         throw new Error(await res.text());
       }
 
-      toast({
-        title: "Goals Saved!",
-        description: "Your goals have been successfully saved.",
-      });
+      push("Goals saved successfully! ✅");
     } catch (e) {
       const message = e instanceof Error ? e.message : "Error saving goals";
       setError(message);
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
+      push(`Error saving goals: ${message}`);
     } finally {
       setSaving(false);
     }

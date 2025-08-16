@@ -42,7 +42,7 @@ serve(async (req: Request) => {
     // Persist month_summaries
     const { error: upErr } = await supabase
       .from("month_summaries")
-      .upsert({ user_id, month_ym, totals }) as any;
+      .upsert({ user_id, month_ym, totals }, { onConflict: 'user_id,month_ym' }) as any;
     if (upErr) return new Response(JSON.stringify({ error: upErr.message }), { status: 500, headers: { "Content-Type": "application/json" } });
 
     return new Response(JSON.stringify({ ok: true, totals }), { status: 200, headers: { "Content-Type": "application/json" } });

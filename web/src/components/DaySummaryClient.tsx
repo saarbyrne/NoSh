@@ -4,9 +4,13 @@ import { getSupabaseClient } from "@/lib/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-interface MonthSummaryData {
-  totals: Record<string, number>;
-  pattern_flags: Record<string, boolean>;
+interface DaySummaryProps {
+  userId: string;
+  date: string;
+}
+
+interface DaySummaryData {
+  totals: { [category: string]: number };
   photos: Array<{
     id: string;
     taken_at: string;
@@ -20,50 +24,31 @@ interface MonthSummaryData {
   }>;
 }
 
-export default function MonthSummaryClient({ ym }: { ym: string }) {
-  const [summary, setSummary] = useState<MonthSummaryData | null>(null);
+export default function DaySummaryClient({ userId, date }: DaySummaryProps) {
+  const [summary, setSummary] = useState<DaySummaryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchMonthSummary = async () => {
+    const fetchDaySummary = async () => {
       setLoading(true);
       setError(null);
       try {
         const supabase = getSupabaseClient();
-        const { data: session } = await supabase.auth.getSession();
-        const userId = session.session?.user.id;
-        if (!userId) {
-          setError("Not logged in");
-          return;
-        }
-
+        
         // First try to get pre-calculated summary
-        const { data: monthSummary, error: summaryError } = await supabase
-          .from("month_summaries")
-          .select("totals, pattern_flags")
+        const { data: daySummary, error: summaryError } = await supabase
+          .from("day_summaries")
+          .select("totals")
           .eq("user_id", userId)
-          .eq("month_ym", ym)
+          .eq("date", date)
           .single();
 
         if (summaryError && summaryError.code !== 'PGRST116') {
           throw new Error(summaryError.message);
         }
 
-        // Get photos for this month
-        const { data: monthRow } = await supabase
-          .from("months")
-          .select("id")
-          .eq("user_id", userId)
-          .eq("month_ym", ym)
-          .maybeSingle();
-
-        const monthId = (monthRow as { id?: string })?.id;
-        if (!monthId) {
-          setSummary({ totals: {}, pattern_flags: {}, photos: [] });
-          return;
-        }
-
+        // Get photos for this day
         const { data: photos, error: photosError } = await supabase
           .from("photos")
           .select(`
@@ -77,7 +62,9 @@ export default function MonthSummaryClient({ ym }: { ym: string }) {
               taxonomy_category
             )
           `)
-          .eq("month_id", monthId)
+          .eq("user_id", userId)
+          .gte("taken_at", `${date}T00:00:00`)
+          .lt("taken_at", `${date}T23:59:59`)
           .order("taken_at", { ascending: false });
 
         if (photosError) {
@@ -85,9 +72,9 @@ export default function MonthSummaryClient({ ym }: { ym: string }) {
         }
 
         // Calculate totals if no pre-calculated summary exists
-        let calculatedTotals: Record<string, number> = {};
-        if (monthSummary) {
-          calculatedTotals = monthSummary.totals;
+        let calculatedTotals: { [key: string]: number } = {};
+        if (daySummary) {
+          calculatedTotals = daySummary.totals;
         } else if (photos) {
           photos.forEach(photo => {
             photo.photo_items?.forEach(item => {
@@ -99,44 +86,41 @@ export default function MonthSummaryClient({ ym }: { ym: string }) {
 
         setSummary({
           totals: calculatedTotals,
-          pattern_flags: monthSummary?.pattern_flags || {},
           photos: photos || []
         });
       } catch (err) {
         setError((err as Error).message);
-        console.error("Error fetching month summary:", err);
+        console.error("Error fetching day summary:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchMonthSummary();
-  }, [ym]);
+    fetchDaySummary();
+  }, [userId, date]);
 
   if (loading) {
-    return <div className="text-muted">Loading month summary...</div>;
+    return <div className="text-muted">Loading day summary...</div>;
   }
 
   if (error) {
     return <div className="text-destructive">Error: {error}</div>;
   }
 
-  if (!summary || Object.keys(summary.totals).length === 0) {
-    return <div className="text-muted">No data for this month.</div>;
+  if (!summary || summary.photos.length === 0) {
+    return <div className="text-muted">No photos for this day.</div>;
   }
-
-  const sortedTotals = Object.entries(summary.totals).sort((a, b) => b[1] - a[1]);
 
   return (
     <div className="space-y-6">
       {/* Summary Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Monthly Summary</CardTitle>
+          <CardTitle>Daily Summary</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {sortedTotals.map(([category, count]) => (
+            {Object.entries(summary.totals).map(([category, count]) => (
               <div key={category} className="flex justify-between items-center">
                 <span className="font-medium">{category}</span>
                 <Badge>{count}</Badge>
@@ -145,27 +129,6 @@ export default function MonthSummaryClient({ ym }: { ym: string }) {
           </div>
         </CardContent>
       </Card>
-
-      {/* Pattern Flags Card */}
-      {Object.keys(summary.pattern_flags).length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Patterns Detected</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {Object.entries(summary.pattern_flags).map(([flag, value]) => (
-                <div key={flag} className="flex justify-between items-center">
-                  <span className="font-medium">{flag}</span>
-                  <Badge variant={value ? "default" : "secondary"}>
-                    {value ? "Yes" : "No"}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Photos Card */}
       <Card>
@@ -178,7 +141,7 @@ export default function MonthSummaryClient({ ym }: { ym: string }) {
               <div key={photo.id} className="border rounded-lg p-4">
                 <div className="flex justify-between items-start mb-3">
                   <span className="text-sm text-muted">
-                    {new Date(photo.taken_at).toLocaleDateString()} at {new Date(photo.taken_at).toLocaleTimeString()}
+                    {new Date(photo.taken_at).toLocaleTimeString()}
                   </span>
                   <Badge variant="outline">{photo.photo_items?.length || 0} items</Badge>
                 </div>
@@ -207,5 +170,3 @@ export default function MonthSummaryClient({ ym }: { ym: string }) {
     </div>
   );
 }
-
-

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import RequireAuth from "@/components/RequireAuth";
+import Header from "@/components/Header";
 import MonthSummaryClient from "@/components/MonthSummaryClient";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -25,12 +26,10 @@ export default function MonthPage({
 
   return (
     <RequireAuth>
-      <div className="p-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-xl font-semibold">
-            Monthly Summary - {new Date(ym + "-01").toLocaleDateString(undefined, { year: 'numeric', month: 'long' })}
-          </h1>
-          <div className="flex gap-2">
+      <div className="min-h-screen bg-background">
+        <Header title={`Monthly Summary - ${new Date(ym + "-01").toLocaleDateString(undefined, { year: 'numeric', month: 'long' })}`} />
+        <div className="pt-20 p-6 space-y-6">
+          <div className="flex justify-end gap-2">
             <Link href={`/day/${today}`}>
               <Button variant="outline" size="sm">
                 Today&apos;s Summary
@@ -47,8 +46,8 @@ export default function MonthPage({
               </Button>
             </Link>
           </div>
+          <MonthSummaryClient ym={ym} />
         </div>
-        <MonthSummaryClient ym={ym} />
       </div>
     </RequireAuth>
   );

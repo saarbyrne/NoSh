@@ -18,6 +18,8 @@ export default function BottomNavigation({ currentPage }: BottomNavigationProps)
   const getCurrentPage = (): 'today' | 'calendar' | 'goals' | 'settings' => {
     if (currentPage) return currentPage;
     
+    if (!pathname) return 'today';
+    
     if (pathname.startsWith('/upload')) return 'today';
     if (pathname.startsWith('/month/') || pathname.startsWith('/day/')) return 'calendar';
     if (pathname.startsWith('/goals/')) return 'goals';
@@ -54,7 +56,7 @@ export default function BottomNavigation({ currentPage }: BottomNavigationProps)
       <Card className="border-t border-border bg-background shadow-lg">
         <div className="grid grid-cols-4 gap-1 p-3 max-w-md mx-auto">
           <Button
-            variant={activePage === 'today' ? 'default' : 'ghost'}
+            variant={activePage === 'today' ? 'primary' : 'ghost'}
             size="sm"
             className={`flex flex-col items-center justify-center h-14 gap-1 rounded-lg ${
               activePage === 'today' 
@@ -68,7 +70,7 @@ export default function BottomNavigation({ currentPage }: BottomNavigationProps)
           </Button>
           
           <Button
-            variant={activePage === 'calendar' ? 'default' : 'ghost'}
+            variant={activePage === 'calendar' ? 'primary' : 'ghost'}
             size="sm"
             className={`flex flex-col items-center justify-center h-14 gap-1 rounded-lg ${
               activePage === 'calendar' 
@@ -82,7 +84,7 @@ export default function BottomNavigation({ currentPage }: BottomNavigationProps)
           </Button>
           
           <Button
-            variant={activePage === 'goals' ? 'default' : 'ghost'}
+            variant={activePage === 'goals' ? 'primary' : 'ghost'}
             size="sm"
             className={`flex flex-col items-center justify-center h-14 gap-1 rounded-lg ${
               activePage === 'goals' 
@@ -96,7 +98,7 @@ export default function BottomNavigation({ currentPage }: BottomNavigationProps)
           </Button>
           
           <Button
-            variant={activePage === 'settings' ? 'default' : 'ghost'}
+            variant={activePage === 'settings' ? 'primary' : 'ghost'}
             size="sm"
             className={`flex flex-col items-center justify-center h-14 gap-1 rounded-lg ${
               activePage === 'settings' 

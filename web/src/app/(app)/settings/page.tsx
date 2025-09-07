@@ -1,34 +1,88 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import RequireAuth from "@/components/RequireAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
-import { User, Mail, Calendar, Trash2, LogOut, Bell, Shield, HelpCircle } from "lucide-react";
+import { 
+  ArrowLeft, 
+  Shield, 
+  Info, 
+  Check, 
+  Trash2, 
+  Download
+} from "lucide-react";
 
 export default function SettingsPage() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{ id: string; email?: string; created_at?: string } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [email, setEmail] = useState("");
-  const [notifications, setNotifications] = useState({
-    email: true,
-    push: false,
-    weekly: true,
-  });
+  const [hasConsented, setHasConsented] = useState(false);
+  const [showConsentDetails, setShowConsentDetails] = useState(false);
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
   const { push } = useToast();
+
+  // Helper function to get the Supabase client
+  const getClient = () => {
+    return getSupabaseClient();
+  };
+
+  const loadUserPreferences = useCallback(async () => {
+    try {
+      if (!user?.id) {
+        console.log("No user ID available for loading preferences");
+        // Try to load from localStorage as fallback
+        const localConsent = localStorage.getItem('photo_analysis_consent');
+        if (localConsent !== null) {
+          setHasConsented(localConsent === 'true');
+          setIsOfflineMode(true);
+        }
+        return;
+      }
+
+      try {
+        const client = getClient();
+        const { data, error } = await client
+          .from('profiles')
+          .select('photo_analysis_consent')
+          .eq('id', user.id)
+          .single();
+        
+        if (error) {
+          throw error;
+        }
+
+        if (data) {
+          setHasConsented(data.photo_analysis_consent || false);
+          setIsOfflineMode(false);
+        }
+      } catch (dbError) {
+        console.error("Database error, loading from localStorage:", dbError);
+        
+        // Fallback to localStorage
+        const localConsent = localStorage.getItem('photo_analysis_consent');
+        if (localConsent !== null) {
+          setHasConsented(localConsent === 'true');
+          setIsOfflineMode(true);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading preferences:", error);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     const getUser = async () => {
       try {
-        const { data: { user } } = await getSupabaseClient().auth.getUser();
+        const client = getClient();
+        const { data: { user } } = await client.auth.getUser();
         if (user) {
           setUser(user);
-          setEmail(user.email || "");
+          // Load user's photo analysis consent preference
+          await loadUserPreferences();
         }
       } catch (error) {
         console.error("Error getting user:", error);
@@ -39,39 +93,76 @@ export default function SettingsPage() {
     };
 
     getUser();
-  }, [push]);
+  }, [push, loadUserPreferences]);
 
-  const handleSignOut = async () => {
+  const handleConsentChange = async (consented: boolean) => {
     try {
-      await getSupabaseClient().auth.signOut();
-      window.location.href = "/login";
+      setHasConsented(consented);
+      
+      // Check if user is authenticated
+      if (!user?.id) {
+        console.error("No authenticated user found");
+        push("Please log in to save preferences");
+        setHasConsented(!consented);
+        return;
+      }
+
+      // Try to save to database
+      try {
+        const client = getClient();
+        const { error } = await client
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            email: user.email,
+            photo_analysis_consent: consented,
+            updated_at: new Date().toISOString()
+          });
+
+        if (error) {
+          throw error;
+        }
+
+        // Success - save to localStorage as backup
+        localStorage.setItem('photo_analysis_consent', consented.toString());
+        setIsOfflineMode(false);
+        push(consented ? "Photo analysis enabled" : "Photo analysis disabled");
+      } catch (dbError) {
+        console.error("Database error, falling back to localStorage:", dbError);
+        
+        // Fallback to localStorage
+        localStorage.setItem('photo_analysis_consent', consented.toString());
+        setIsOfflineMode(true);
+        push(`${consented ? "Photo analysis enabled" : "Photo analysis disabled"} (saved locally - database unavailable)`);
+      }
     } catch (error) {
-      console.error("Error signing out:", error);
-      push("Failed to sign out");
+      console.error("Error updating consent:", error);
+      push(`Failed to update preferences: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setHasConsented(!consented); // Revert on error
     }
   };
 
-  const handleDeleteAccount = async () => {
-    if (!confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+  const handleExportData = async () => {
+    try {
+      // In a real app, you'd generate and download user data
+      push("Data export feature coming soon");
+    } catch (error) {
+      console.error("Error exporting data:", error);
+      push("Failed to export data");
+    }
+  };
+
+  const handleDeleteAllData = async () => {
+    if (!confirm("Are you sure you want to delete all your data? This action cannot be undone.")) {
       return;
     }
 
     try {
-      // In a real app, you'd call a function to delete user data
-      push("Account deletion not implemented yet");
+      // In a real app, you'd call a function to delete all user data
+      push("Data deletion feature coming soon");
     } catch (error) {
-      console.error("Error deleting account:", error);
-      push("Failed to delete account");
-    }
-  };
-
-  const handleUpdateNotifications = async () => {
-    try {
-      // In a real app, you'd save these preferences to the database
-      push("Notification preferences updated");
-    } catch (error) {
-      console.error("Error updating notifications:", error);
-      push("Failed to update preferences");
+      console.error("Error deleting data:", error);
+      push("Failed to delete data");
     }
   };
 
@@ -93,109 +184,17 @@ export default function SettingsPage() {
 
   return (
     <RequireAuth>
-      <div className="min-h-screen bg-background pb-20">
-        <div className="p-6 space-y-6">
+      <div className="bg-background">
+        <div className="max-w-md mx-auto p-6 space-y-8">
           {/* Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" onClick={() => window.history.back()}>
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
             <h1 className="text-2xl font-semibold">Settings</h1>
-            <Badge variant="secondary">Beta</Badge>
           </div>
 
-          {/* Profile Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="w-5 h-5" />
-                Profile
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                  <User className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <p className="font-medium">NoSh User</p>
-                  <p className="text-sm text-muted-foreground">{email}</p>
-                </div>
-              </div>
-              
-              <Separator />
-              
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm">Email notifications</span>
-                  <Badge variant="outline">Verified</Badge>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm">Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Notifications Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="w-5 h-5" />
-                Notifications
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="email-notifications">Email notifications</Label>
-                    <p className="text-sm text-muted-foreground">Receive updates about your goals</p>
-                  </div>
-                  <input
-                    id="email-notifications"
-                    type="checkbox"
-                    checked={notifications.email}
-                    onChange={(e) => setNotifications(prev => ({ ...prev, email: e.target.checked }))}
-                    className="w-4 h-4"
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="push-notifications">Push notifications</Label>
-                    <p className="text-sm text-muted-foreground">Get reminders on your device</p>
-                  </div>
-                  <input
-                    id="push-notifications"
-                    type="checkbox"
-                    checked={notifications.push}
-                    onChange={(e) => setNotifications(prev => ({ ...prev, push: e.target.checked }))}
-                    className="w-4 h-4"
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="weekly-summary">Weekly summary</Label>
-                    <p className="text-sm text-muted-foreground">Get a weekly overview of your progress</p>
-                  </div>
-                  <input
-                    id="weekly-summary"
-                    type="checkbox"
-                    checked={notifications.weekly}
-                    onChange={(e) => setNotifications(prev => ({ ...prev, weekly: e.target.checked }))}
-                    className="w-4 h-4"
-                  />
-                </div>
-              </div>
-              
-              <Button onClick={handleUpdateNotifications} className="w-full">
-                Save Preferences
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Privacy & Data Section */}
+          {/* Privacy & Data section */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -203,88 +202,148 @@ export default function SettingsPage() {
                 Privacy & Data
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
+              {/* Photo analysis consent */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Data retention</p>
-                    <p className="text-sm text-muted-foreground">Photos are automatically deleted after 30 days</p>
+                  <div className="space-y-1">
+                    <div className="text-sm">Photo Analysis</div>
+                    <div className="text-xs text-muted-foreground">
+                      Allow automatic AI analysis of food photos
+                    </div>
+                  </div>
+                  <Switch
+                    checked={hasConsented}
+                    onCheckedChange={handleConsentChange}
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant={hasConsented ? "default" : "secondary"}
+                    className="text-xs"
+                  >
+                    {hasConsented ? (
+                      <>
+                        <Check className="w-3 h-3 mr-1" />
+                        Enabled
+                      </>
+                    ) : (
+                      "Disabled"
+                    )}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Toggle consent details */}
+              <Button
+                onClick={() => setShowConsentDetails(!showConsentDetails)}
+                variant="ghost"
+                size="sm"
+                className="text-xs text-muted-foreground h-auto p-0"
+              >
+                <Info className="w-3 h-3 mr-1" />
+                {showConsentDetails ? "Hide" : "Show"} data handling details
+              </Button>
+
+              {/* Consent details */}
+              {showConsentDetails && (
+                <div className="space-y-3 pt-2 border-t">
+                  <div className="text-xs space-y-2">
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground">
+                        What happens to your photos:
+                      </div>
+                      <ul className="space-y-1 ml-4 text-muted-foreground">
+                        <li>• Photos are analyzed by AI to detect food categories</li>
+                        <li>• Nutritional data is extracted and saved</li>
+                        <li>• Original photos are permanently deleted after 30 days</li>
+                        <li>• Only aggregated nutrition data is kept long-term</li>
+                      </ul>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground">Your rights:</div>
+                      <ul className="space-y-1 ml-4 text-muted-foreground">
+                        <li>• You can disable analysis at any time</li>
+                        <li>• Request deletion of all your data</li>
+                        <li>• Export your nutrition data</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Export data</p>
-                    <p className="text-sm text-muted-foreground">Download your data</p>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Export
-                  </Button>
-                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Status alert */}
+          {!hasConsented && (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                Photo analysis is disabled. You can still track manually, but won&apos;t get automated nutrition insights.
+                {isOfflineMode && " (Settings saved locally)"}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {hasConsented && (
+            <Alert className="border-primary/20 bg-primary/5">
+              <Check className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-primary">
+                Photo analysis is enabled. Your photos will be processed automatically.
+                {isOfflineMode && " (Settings saved locally)"}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Offline mode indicator */}
+          {isOfflineMode && (
+            <Alert className="border-yellow-200 bg-yellow-50">
+              <Info className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-800">
+                Database unavailable. Settings are saved locally and will sync when connection is restored.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* App Information */}
+          <Card className="bg-muted/30">
+            <CardHeader>
+              <CardTitle className="text-base">App Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Version</span>
+                <span>1.0.0</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Last updated</span>
+                <span>Dec 2024</span>
               </div>
             </CardContent>
           </Card>
 
-          {/* Help & Support Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <HelpCircle className="w-5 h-5" />
-                Help & Support
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <Button variant="outline" className="w-full justify-start">
-                  <HelpCircle className="w-4 h-4 mr-2" />
-                  Help Center
-                </Button>
-                
-                <Button variant="outline" className="w-full justify-start">
-                  <Mail className="w-4 h-4 mr-2" />
-                  Contact Support
-                </Button>
-                
-                <Button variant="outline" className="w-full justify-start">
-                  <Shield className="w-4 h-4 mr-2" />
-                  Privacy Policy
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Additional actions */}
+          <div className="space-y-3">
+            <Button
+              variant="outline"
+              className="w-full h-10"
+              onClick={handleExportData}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export My Data
+            </Button>
 
-          {/* Danger Zone */}
-          <Card className="border-destructive">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-destructive">
-                <Trash2 className="w-5 h-5" />
-                Danger Zone
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div>
-                  <p className="font-medium">Sign out</p>
-                  <p className="text-sm text-muted-foreground">Sign out of your account</p>
-                </div>
-                <Button variant="outline" onClick={handleSignOut} className="w-full">
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sign Out
-                </Button>
-                
-                <Separator />
-                
-                <div>
-                  <p className="font-medium text-destructive">Delete account</p>
-                  <p className="text-sm text-muted-foreground">Permanently delete your account and all data</p>
-                </div>
-                <Button variant="destructive" onClick={handleDeleteAccount} className="w-full">
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete Account
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+            <Button
+              variant="outline"
+              className="w-full h-10 text-destructive border-destructive/20"
+              onClick={handleDeleteAllData}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete All Data
+            </Button>
+          </div>
         </div>
       </div>
     </RequireAuth>

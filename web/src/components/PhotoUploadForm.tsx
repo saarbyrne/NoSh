@@ -32,6 +32,9 @@ export default function PhotoUploadForm({
   const [notes, setNotes] = useState("");
   const [isNotesFocused, setIsNotesFocused] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({});
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const readyPhotos = photos.length;
   const hasMinimum = readyPhotos >= 3;
@@ -68,12 +71,50 @@ export default function PhotoUploadForm({
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file || !onPhotoUpload) return;
 
+      const tempId = `temp-${Date.now()}`;
       setIsUploading(true);
+      setUploadProgress(prev => ({ ...prev, [tempId]: 0 }));
+      setUploadErrors(prev => {
+        const { [tempId]: _, ...rest } = prev;
+        return rest;
+      });
+
       try {
+        // Simulate progress for better UX
+        const progressInterval = setInterval(() => {
+          setUploadProgress(prev => {
+            const current = prev[tempId] || 0;
+            if (current < 90) {
+              return { ...prev, [tempId]: current + 10 };
+            }
+            return prev;
+          });
+        }, 100);
+
         const photo = await onPhotoUpload(file);
-        setPhotos(prev => [...prev, photo]);
+        
+        clearInterval(progressInterval);
+        setUploadProgress(prev => ({ ...prev, [tempId]: 100 }));
+        
+        // Small delay to show completion
+        setTimeout(() => {
+          setPhotos(prev => [...prev, photo]);
+          setUploadProgress(prev => {
+            const { [tempId]: _, ...rest } = prev;
+            return rest;
+          });
+        }, 200);
+
       } catch (error) {
         console.error("Failed to upload photo:", error);
+        setUploadErrors(prev => ({ 
+          ...prev, 
+          [tempId]: error instanceof Error ? error.message : "Upload failed" 
+        }));
+        setUploadProgress(prev => {
+          const { [tempId]: _, ...rest } = prev;
+          return rest;
+        });
       } finally {
         setIsUploading(false);
       }
@@ -87,13 +128,26 @@ export default function PhotoUploadForm({
     onPhotoDelete?.(photoId);
   };
 
-  const handleFinishDay = () => {
+  const handleFinishDay = async () => {
     if (onFinishDay && hasMinimum) {
-      onFinishDay(photos, notes, selectedDate);
+      setIsProcessing(true);
+      try {
+        await onFinishDay(photos, notes, selectedDate);
+      } catch (error) {
+        console.error("Failed to finish day:", error);
+      } finally {
+        setIsProcessing(false);
+      }
     }
   };
 
-  const PhotoCard = ({ photo, onDelete }: { photo: Photo; onDelete: () => void }) => (
+  const PhotoCard = ({ photo, onDelete, showProgress = false, progress = 0, error }: { 
+    photo: Photo; 
+    onDelete: () => void;
+    showProgress?: boolean;
+    progress?: number;
+    error?: string;
+  }) => (
     <Card className="aspect-square relative group overflow-hidden">
       <CardContent className="p-0 h-full">
         <img
@@ -101,6 +155,27 @@ export default function PhotoUploadForm({
           alt="Uploaded food"
           className="w-full h-full object-cover"
         />
+        
+        {/* Progress overlay */}
+        {showProgress && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <div className="text-center text-white">
+              <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+              <div className="text-xs">{progress}%</div>
+            </div>
+          </div>
+        )}
+        
+        {/* Error overlay */}
+        {error && (
+          <div className="absolute inset-0 bg-red-500/80 flex items-center justify-center p-2">
+            <div className="text-center text-white text-xs">
+              <X className="w-4 h-4 mx-auto mb-1" />
+              <div>Upload failed</div>
+            </div>
+          </div>
+        )}
+        
         <button
           onClick={onDelete}
           className="absolute top-2 right-2 w-6 h-6 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors"
@@ -258,10 +333,20 @@ export default function PhotoUploadForm({
         {hasMinimum && (
           <Button
             onClick={handleFinishDay}
-            className="w-full h-11 gap-2 bg-green-600 hover:bg-green-700 text-white"
+            disabled={isProcessing || isUploading}
+            className="w-full h-11 gap-2 bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
           >
-            <CheckCircle className="w-4 h-4" />
-            Finish Day & Analyze
+            {isProcessing ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <CheckCircle className="w-4 h-4" />
+                Finish Day & Analyze
+              </>
+            )}
           </Button>
         )}
 

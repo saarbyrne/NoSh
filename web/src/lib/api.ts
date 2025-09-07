@@ -56,7 +56,7 @@ export async function createUploadUrl(params: {
       { ...params, fn: functionName, action },
       { action: undefined }
     );
-    const p = raw?.parsed ?? raw;
+    const p = raw?.parsed ?? raw as any;
     const photo_id = p?.photo_id ?? p?.photoId ?? p?.id ?? p?.data?.photo_id ?? p?.data?.id;
     const signed_url = p?.signed_url ?? p?.signedUrl ?? p?.url ?? p?.data?.signed_url ?? p?.data?.url;
     const storage_path = p?.storage_path ?? p?.storagePath ?? p?.path ?? p?.data?.storage_path ?? undefined;

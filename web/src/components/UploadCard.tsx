@@ -85,7 +85,6 @@ export default function UploadCard() {
               user_id: (await (await import("@/lib/supabaseClient")).getSupabaseClient().auth.getUser()).data.user?.id,
               taken_at: toIsoSeconds(now),
               storage_path: new URL(photoUrl).pathname,
-              month_ym: formatMonthYM(now),
             });
           } catch (dbErr) {
             console.error("savePhotoItems error", dbErr);

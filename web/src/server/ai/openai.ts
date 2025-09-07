@@ -1,211 +1,105 @@
-import { VisionOutput, GoalsOutput } from "@/lib/schemas";
+import { VisionOutputSchema, GoalsOutputSchema, type VisionOutputT, type GoalsOutputT } from "@/lib/schemas";
 
-export interface OpenAIConfig {
-  apiKey: string;
-  model?: string;
-  visionModel?: string;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
+if (!OPENAI_API_KEY) {
+  console.warn("OPENAI_API_KEY is not set. OpenAI fallback will not work.");
 }
 
-export class OpenAIClient {
-  private apiKey: string;
-  private model: string;
-  private visionModel: string;
-  private baseUrl: string;
-
-  constructor(config: OpenAIConfig) {
-    this.apiKey = config.apiKey;
-    this.model = config.model || "gpt-3.5-turbo";
-    this.visionModel = config.visionModel || "gpt-4-vision-preview";
-    this.baseUrl = "https://api.openai.com/v1";
+async function callOpenAI(prompt: string, photoUrl?: string): Promise<any> {
+  if (!OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY is not configured.");
   }
 
-  async analyzeImage({ signedUrl }: { signedUrl: string }): Promise<VisionOutput> {
-    const url = `${this.baseUrl}/chat/completions`;
-    
-    const prompt = `Identify foods/drinks in this image. Be thorough and accurate.
-Return strict JSON with this exact schema:
-{
-  "photo_id": "string",
-  "items": [
-    {
-      "raw_label": "string",
-      "confidence": number (0-1),
-      "packaged": boolean,
-      "taxonomy_category": "string"
-    }
-  ],
-  "ocr_text": "string (optional)"
-}
+  const messages: any[] = [{ role: "user", content: prompt }];
 
-Rules:
-- confidence is between 0 and 1
-- packaged=true if it's a commercial product with visible packaging
-- taxonomy_category must be one of: fruit, vegetables, high-fibre cereals, low-fibre cereals, sugary drinks, water, oily fish, white fish, processed meats, unprocessed meats, plant proteins, dairy, nuts & seeds, sweets & desserts, fried foods, whole grains, refined grains, coffee/tea (unsweetened), coffee/tea (sweetened)
-- If you see text on packaging, include it in ocr_text
-- Be specific with raw_label (e.g., "red apple" not just "apple")
-- Return only valid JSON, no other text`;
-
-    const payload = {
-      model: this.visionModel,
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            {
-              type: "image_url",
-              image_url: {
-                url: signedUrl,
-                detail: "high"
-              }
-            }
-          ]
-        }
-      ],
-      max_tokens: 2048,
-      temperature: 0.1,
-      response_format: { type: "json_object" }
-    };
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${this.apiKey}`,
+  if (photoUrl) {
+    messages[0].content = [
+      { type: "text", text: prompt },
+      {
+        type: "image_url",
+        image_url: {
+          url: photoUrl,
+        },
       },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
-    }
-
-    const result = await response.json();
-    
-    // Extract JSON from OpenAI response
-    const jsonText = result?.choices?.[0]?.message?.content;
-    if (!jsonText) {
-      throw new Error("No response content from OpenAI");
-    }
-
-    // Parse and validate JSON
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(jsonText);
-    } catch (error) {
-      throw new Error(`Invalid JSON from OpenAI: ${jsonText}`);
-    }
-
-    // Validate with Zod schema
-    const validated = VisionOutput.parse(parsed);
-    return validated;
+    ];
   }
 
-  async generateGoals({ monthSummaryJson }: { monthSummaryJson: string }): Promise<GoalsOutput> {
-    const url = `${this.baseUrl}/chat/completions`;
-    
-    const instructions = `You are a compassionate nutrition assistant. Based on the user's food consumption patterns over 3 days, generate 3 personalized, actionable nutrition goals.
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4o", // Or gpt-4-vision-preview for vision tasks
+      messages: messages,
+      response_format: { type: "json_object" },
+    }),
+  });
 
-Month Summary Data:
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(`OpenAI API error: ${response.status} - ${JSON.stringify(data)}`);
+  }
+
+  const content = data.choices[0]?.message?.content;
+  if (!content) {
+    throw new Error("No content received from OpenAI.");
+  }
+  return JSON.parse(content);
+}
+
+export async function analyzeImage({ signedUrl }: { signedUrl: string }): Promise<VisionOutputT> {
+  const prompt = `Identify foods/drinks in this image.
+Return strict JSON:
+{
+  "photo_id": string,
+  "items": [
+    { "raw_label": string, "confidence": number, "packaged": boolean, "taxonomy_category": string }
+  ],
+  "ocr_text": string | undefined
+}
+- confidence is between 0 and 1
+- packaged=true if it's a commercial product
+- taxonomy_category should be one of: fruit, vegetables, whole grains, refined grains, dairy, protein, nuts/seeds, legumes, oils, sugary drinks, processed meats, oily fish, other
+- ocr_text should contain any detected text from packaging or labels`;
+
+  let result;
+  for (let i = 0; i < 2; i++) { // 1 retry
+    try {
+      result = await callOpenAI(prompt, signedUrl);
+      return VisionOutputSchema.parse(result);
+    } catch (error) {
+      if (i === 0) console.warn("OpenAI analyzeImage validation failed, retrying...", error);
+      else throw error;
+    }
+  }
+  throw new Error("Failed to analyze image with OpenAI after retries.");
+}
+
+export async function generateGoals({ monthSummaryJson }: { monthSummaryJson: string }): Promise<GoalsOutputT> {
+  const instructions = `You are a nutrition assistant. Based on these category totals for the past 3 days, write 3 simple, actionable goals. Keep them realistic, specific, and kind.
+
+Totals JSON:
 ${monthSummaryJson}
 
-Return strict JSON with this exact schema:
+Return strict JSON with this schema:
 {
   "goals": [
-    {
-      "title": "string (max 60 chars)",
-      "why": "string (max 120 chars)",
-      "how": "string (max 200 chars)",
-      "fallback": "string (max 120 chars)"
-    }
+    {"title": string (<=60), "why": string (<=120), "how": string (<=200), "fallback": string (<=120)}
   ]
-}
+}`;
 
-Guidelines:
-- Make goals realistic, specific, and achievable
-- Be encouraging and non-judgmental
-- Focus on adding healthy foods rather than restricting
-- Consider the user's current patterns
-- Provide practical, actionable steps
-- Include a fallback option for each goal
-- Keep language simple and motivating
-- Return only valid JSON, no other text`;
-
-    const payload = {
-      model: this.model,
-      messages: [
-        {
-          role: "system",
-          content: "You are a compassionate nutrition assistant who helps people improve their eating habits through positive, achievable goals."
-        },
-        {
-          role: "user",
-          content: instructions
-        }
-      ],
-      max_tokens: 1024,
-      temperature: 0.3,
-      response_format: { type: "json_object" }
-    };
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
-    }
-
-    const result = await response.json();
-    
-    // Extract JSON from OpenAI response
-    const jsonText = result?.choices?.[0]?.message?.content;
-    if (!jsonText) {
-      throw new Error("No response content from OpenAI");
-    }
-
-    // Parse and validate JSON
-    let parsed: unknown;
+  let result;
+  for (let i = 0; i < 2; i++) { // 1 retry
     try {
-      parsed = JSON.parse(jsonText);
+      result = await callOpenAI(instructions);
+      return GoalsOutputSchema.parse(result);
     } catch (error) {
-      throw new Error(`Invalid JSON from OpenAI: ${jsonText}`);
+      if (i === 0) console.warn("OpenAI generateGoals validation failed, retrying...", error);
+      else throw error;
     }
-
-    // Validate with Zod schema
-    const validated = GoalsOutput.parse(parsed);
-    return validated;
   }
-
-  // Retry logic for failed requests
-  async withRetry<T>(
-    operation: () => Promise<T>,
-    maxRetries: number = 1
-  ): Promise<T> {
-    let lastError: Error;
-    
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        return await operation();
-      } catch (error) {
-        lastError = error as Error;
-        if (attempt < maxRetries) {
-          console.log(`Attempt ${attempt + 1} failed, retrying...`);
-          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
-        }
-      }
-    }
-    
-    throw lastError!;
-  }
-}
-
-// Factory function for creating client
-export function createOpenAIClient(apiKey: string): OpenAIClient {
-  return new OpenAIClient({ apiKey });
+  throw new Error("Failed to generate goals with OpenAI after retries.");
 }

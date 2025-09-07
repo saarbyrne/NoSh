@@ -5,6 +5,40 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+type DayTotals = Record<string, number>;
+
+type PatternFlags = {
+  LOW_FIBRE?: boolean;
+  HIGH_SUGARY_DRINKS?: boolean;
+  LOW_OMEGA3?: boolean;
+  HIGH_PROCESSED_MEAT?: boolean;
+  HIGH_FIBRE_CEREAL_PRESENT?: boolean;
+};
+
+function evaluateMonthPatterns(
+  totals3Days: Array<DayTotals>,
+  ocrText?: string
+): PatternFlags {
+  const sumCat = (cat: string) =>
+    totals3Days.reduce((acc, day) => acc + (day[cat] || 0), 0);
+
+  const flags: PatternFlags = {};
+
+  if (sumCat("fruit") + sumCat("vegetables") < 5) flags.LOW_FIBRE = true;
+  if (sumCat("sugary drinks") >= 2) flags.HIGH_SUGARY_DRINKS = true;
+  if (sumCat("oily fish") === 0) flags.LOW_OMEGA3 = true;
+  if (sumCat("processed meats") >= 2) flags.HIGH_PROCESSED_MEAT = true;
+
+  if (ocrText) {
+    const t = ocrText.toLowerCase();
+    if (t.includes("whole grain") || /\b6g\s*fibre\s*\/\s*100g\b/i.test(ocrText)) {
+      flags.HIGH_FIBRE_CEREAL_PRESENT = true;
+    }
+  }
+
+  return flags;
+}
+
 serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -39,13 +73,16 @@ serve(async (req: Request) => {
       }
     }
 
+    // Generate pattern flags using rules
+    const patternFlags = evaluateMonthPatterns(first3.map((d: any) => d.totals || {}));
+
     // Persist month_summaries
     const { error: upErr } = await supabase
       .from("month_summaries")
-      .upsert({ user_id, month_ym, totals }, { onConflict: 'user_id,month_ym' }) as any;
+      .upsert({ user_id, month_ym, totals, pattern_flags: patternFlags }, { onConflict: 'user_id,month_ym' }) as any;
     if (upErr) return new Response(JSON.stringify({ error: upErr.message }), { status: 500, headers: { "Content-Type": "application/json" } });
 
-    return new Response(JSON.stringify({ ok: true, totals }), { status: 200, headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ ok: true, totals, pattern_flags: patternFlags }), { status: 200, headers: { "Content-Type": "application/json" } });
   } catch (e) {
     return new Response(JSON.stringify({ error: (e as Error).message }), { status: 500, headers: { "Content-Type": "application/json" } });
   }

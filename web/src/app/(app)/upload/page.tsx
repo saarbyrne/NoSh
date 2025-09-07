@@ -84,28 +84,33 @@ export default function UploadPage() {
 
   return (
     <RequireAuth>
-      <div className="min-h-screen bg-background">
-        <Header title="Log Your Day" />
-        <div className="pt-20 p-4">
-          <div className="flex justify-end gap-2 mb-4">
-            <Link href={`/day/${today}`}>
-              <Button variant="secondary" className="text-xs">
-                Today&apos;s Summary
-              </Button>
-            </Link>
-            <Link href={`/month/${currentMonth}`}>
-              <Button variant="secondary" className="text-xs">
-                Monthly Summary
-              </Button>
-            </Link>
-          </div>
-        </div>
-        
-        <PhotoUploadForm
-          onPhotoUpload={handlePhotoUpload}
-          onPhotoDelete={handlePhotoDelete}
-          onFinishDay={handleFinishDay}
+      <div className="min-h-screen bg-background pb-20">
+        <Header 
+          title="Log Your Day" 
+          subtitle="Upload photos of your meals and snacks"
+          actions={
+            <div className="flex gap-2">
+              <Link href={`/day/${today}`}>
+                <Button variant="secondary" size="sm">
+                  Today&apos;s Summary
+                </Button>
+              </Link>
+              <Link href={`/month/${currentMonth}`}>
+                <Button variant="secondary" size="sm">
+                  Monthly Summary
+                </Button>
+              </Link>
+            </div>
+          }
         />
+        
+        <div className="p-4">
+          <PhotoUploadForm
+            onPhotoUpload={handlePhotoUpload}
+            onPhotoDelete={handlePhotoDelete}
+            onFinishDay={handleFinishDay}
+          />
+        </div>
       </div>
     </RequireAuth>
   );

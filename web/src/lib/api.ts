@@ -79,19 +79,31 @@ export async function processPhoto(params: { photo_id: string; photo_url?: strin
   return await invokeEdgeFunction<unknown>(functionName, params, { action });
 }
 
-export async function summarizeDay(): Promise<void> {
-  const { error } = await getSupabaseClient().functions.invoke("summarize-day", { body: {} });
-  if (error) throw error;
+export async function summarizeDay(params: { user_id: string; date: string }): Promise<unknown> {
+  const functionName = "summarize-day";
+  const override = process.env.NEXT_PUBLIC_SUPABASE_FUNC_OVERRIDE_URL;
+  if (override) {
+    return await invokeEdgeFunction<unknown>(override, { ...params, fn: functionName }, { action: undefined });
+  }
+  return await invokeEdgeFunction<unknown>(functionName, params);
 }
 
-export async function summarizeMonth(): Promise<void> {
-  const { error } = await getSupabaseClient().functions.invoke("summarize-month", { body: {} });
-  if (error) throw error;
+export async function summarizeMonth(params: { user_id: string; month_ym: string }): Promise<unknown> {
+  const functionName = "summarize-month";
+  const override = process.env.NEXT_PUBLIC_SUPABASE_FUNC_OVERRIDE_URL;
+  if (override) {
+    return await invokeEdgeFunction<unknown>(override, { ...params, fn: functionName }, { action: undefined });
+  }
+  return await invokeEdgeFunction<unknown>(functionName, params);
 }
 
-export async function generateGoals(params: { month_id: string }): Promise<void> {
-  const { error } = await getSupabaseClient().functions.invoke("generate-goals", { body: params });
-  if (error) throw error;
+export async function generateGoals(params: { user_id: string; month_ym: string }): Promise<unknown> {
+  const functionName = "generate-goals";
+  const override = process.env.NEXT_PUBLIC_SUPABASE_FUNC_OVERRIDE_URL;
+  if (override) {
+    return await invokeEdgeFunction<unknown>(override, { ...params, fn: functionName }, { action: undefined });
+  }
+  return await invokeEdgeFunction<unknown>(functionName, params);
 }
 
 // Save analyzed items to DB (client-side insert under RLS)
@@ -107,6 +119,41 @@ export async function savePhotoItems(
   const functionName = process.env.NEXT_PUBLIC_SUPABASE_FUNC_SAVE || "save-photo-items";
   const body = { photo_id: photoId, items, ...extra };
   await invokeEdgeFunction(override, { ...body, fn: functionName }, { action: undefined });
+}
+
+// Submit goal feedback
+export async function submitGoalFeedback(params: {
+  goal_set_id: string;
+  achieved?: boolean;
+  liked?: boolean;
+  repeat_next?: boolean;
+  notes?: string;
+}): Promise<unknown> {
+  const functionName = "submit-feedback";
+  const override = process.env.NEXT_PUBLIC_SUPABASE_FUNC_OVERRIDE_URL;
+  if (override) {
+    return await invokeEdgeFunction<unknown>(override, { ...params, fn: functionName }, { action: undefined });
+  }
+  return await invokeEdgeFunction<unknown>(functionName, params);
+}
+
+// Submit goals (accept/update generated goals)
+export async function submitGoals(params: {
+  user_id: string;
+  month_ym: string;
+  goals: Array<{
+    title: string;
+    why: string;
+    how: string;
+    fallback: string;
+  }>;
+}): Promise<unknown> {
+  const functionName = "submit-goals";
+  const override = process.env.NEXT_PUBLIC_SUPABASE_FUNC_OVERRIDE_URL;
+  if (override) {
+    return await invokeEdgeFunction<unknown>(override, { ...params, fn: functionName }, { action: undefined });
+  }
+  return await invokeEdgeFunction<unknown>(functionName, params);
 }
 
 // Client-side insert to `photos` is intentionally removed to avoid RLS 403s.

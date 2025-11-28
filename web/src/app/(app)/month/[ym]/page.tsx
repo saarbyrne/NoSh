@@ -26,26 +26,9 @@ export default function MonthPage({
 
   return (
     <RequireAuth>
-      <div className="min-h-screen bg-background">
-        <Header title={`Monthly Summary - ${new Date(ym + "-01").toLocaleDateString(undefined, { year: 'numeric', month: 'long' })}`} />
-        <div className="pt-20 p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
-          <div className="flex flex-wrap justify-end gap-2">
-            <Link href={`/day/${today}`}>
-              <Button variant="outline" size="sm">
-                Today&apos;s Summary
-              </Button>
-            </Link>
-            <Link href="/upload">
-              <Button variant="outline" size="sm">
-                Upload Photo
-              </Button>
-            </Link>
-            <Link href={`/goals/${ym}`}>
-              <Button variant="outline" size="sm">
-                View Goals
-              </Button>
-            </Link>
-          </div>
+      <div className="min-h-screen bg-background pb-24">
+        <Header title={`Month - ${new Date(ym + "-01").toLocaleDateString(undefined, { year: 'numeric', month: 'long' })}`} />
+        <div className="pt-20 p-4 sm:p-6 max-w-4xl mx-auto pb-24 space-y-6">
           <MonthSummaryClient ym={ym} />
         </div>
       </div>

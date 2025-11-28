@@ -169,8 +169,9 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <RequireAuth>
-        <div className="min-h-screen bg-background">
-          <div className="pt-20 p-4 sm:p-6 max-w-4xl mx-auto">
+        <div className="min-h-screen bg-background pb-24">
+          <Header title="Settings" />
+          <div className="pt-20 p-4 sm:p-6 max-w-4xl mx-auto pb-24">
             <div className="animate-pulse space-y-4">
               <div className="h-8 bg-muted rounded w-1/3"></div>
               <div className="h-32 bg-muted rounded"></div>
@@ -184,14 +185,9 @@ export default function SettingsPage() {
 
   return (
     <RequireAuth>
-      <div className="bg-background">
-        <div className="pt-20 p-4 sm:p-6 max-w-4xl mx-auto space-y-8">
-          {/* Header */}
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => window.history.back()}>
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <h1 className="text-2xl font-semibold">Settings</h1>
+      <div className="min-h-screen bg-background pb-24">
+        <Header title="Settings" />
+        <div className="pt-20 p-4 sm:p-6 max-w-4xl mx-auto pb-24 space-y-8">
           </div>
 
           {/* Privacy & Data section */}

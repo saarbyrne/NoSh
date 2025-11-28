@@ -109,33 +109,14 @@ export default function GoalsPage({
 
   return (
     <RequireAuth>
-      <div className="min-h-screen bg-background">
-        <Header title={`Monthly Goals - ${monthId ? new Date(monthId + "-01").toLocaleDateString(undefined, { year: 'numeric', month: 'long' }) : 'Loading...'}`} />
-        <div className="pt-20 p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
+      <div className="min-h-screen bg-background pb-24">
+        <Header title={`Goals - ${monthId ? new Date(monthId + "-01").toLocaleDateString(undefined, { year: 'numeric', month: 'long' }) : 'Loading...'}`} />
+        <div className="pt-20 p-4 sm:p-6 max-w-4xl mx-auto pb-24 space-y-6">
           {/* Subtitle */}
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
               AI-generated personalized goals based on your food patterns
             </p>
-          </div>
-
-          {/* Navigation */}
-          <div className="flex flex-wrap justify-end gap-2">
-            <Link href={`/day/${today}`}>
-              <Button variant="outline" size="sm">
-                Today&apos;s Summary
-              </Button>
-            </Link>
-            <Link href={`/month/${monthId}`}>
-              <Button variant="outline" size="sm">
-                Monthly Summary
-              </Button>
-            </Link>
-            <Link href="/upload">
-              <Button variant="outline" size="sm">
-                Upload Photo
-              </Button>
-            </Link>
           </div>
 
           {/* Error Display */}

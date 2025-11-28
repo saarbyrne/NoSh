@@ -187,8 +187,7 @@ export default function PhotoUploadForm({
   );
 
   return (
-    <div className="bg-background p-6">
-      <div className="max-w-md mx-auto space-y-8">
+    <div className="space-y-8">
         {/* Date Selector */}
         <div className="text-center">
           <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
@@ -367,7 +366,6 @@ export default function PhotoUploadForm({
             </div>
           </CardContent>
         </Card>
-      </div>
     </div>
   );
 }

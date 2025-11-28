@@ -21,9 +21,9 @@ export default function DayPage({
 
   return (
     <RequireAuth>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background pb-24">
         <Header title={`Day Summary - ${new Date(date).toLocaleDateString()}`} />
-        <div className="pt-20 p-4 sm:p-6 max-w-4xl mx-auto">
+        <div className="pt-20 p-4 sm:p-6 max-w-4xl mx-auto pb-24">
           <DaySummary date={date} />
         </div>
       </div>

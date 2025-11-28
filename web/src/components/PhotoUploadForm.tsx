@@ -9,10 +9,17 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 
+interface DetectedItem {
+  raw_label: string;
+  confidence: number;
+  packaged?: boolean;
+}
+
 interface Photo {
   id: string;
   url: string;
   file?: File;
+  detectedItems?: DetectedItem[];
 }
 
 interface PhotoUploadFormProps {
@@ -141,49 +148,75 @@ export default function PhotoUploadForm({
     }
   };
 
-  const PhotoCard = ({ photo, onDelete, showProgress = false, progress = 0, error }: { 
-    photo: Photo; 
+  const PhotoCard = ({ photo, onDelete, showProgress = false, progress = 0, error }: {
+    photo: Photo;
     onDelete: () => void;
     showProgress?: boolean;
     progress?: number;
     error?: string;
   }) => (
-    <Card className="aspect-square relative group overflow-hidden">
-      <CardContent className="p-0 h-full">
-        <img
-          src={photo.url}
-          alt="Uploaded food"
-          className="w-full h-full object-cover"
-        />
-        
-        {/* Progress overlay */}
-        {showProgress && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-            <div className="text-center text-white">
-              <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-              <div className="text-xs">{progress}%</div>
+    <div className="space-y-2">
+      <Card className="aspect-square relative group overflow-hidden">
+        <CardContent className="p-0 h-full">
+          <img
+            src={photo.url}
+            alt="Uploaded food"
+            className="w-full h-full object-cover"
+          />
+
+          {/* Progress overlay */}
+          {showProgress && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <div className="text-center text-white">
+                <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                <div className="text-xs">{progress}%</div>
+              </div>
             </div>
-          </div>
-        )}
-        
-        {/* Error overlay */}
-        {error && (
-          <div className="absolute inset-0 bg-red-500/80 flex items-center justify-center p-2">
-            <div className="text-center text-white text-xs">
-              <X className="w-4 h-4 mx-auto mb-1" />
-              <div>Upload failed</div>
+          )}
+
+          {/* Error overlay */}
+          {error && (
+            <div className="absolute inset-0 bg-red-500/80 flex items-center justify-center p-2">
+              <div className="text-center text-white text-xs">
+                <X className="w-4 h-4 mx-auto mb-1" />
+                <div>Upload failed</div>
+              </div>
             </div>
-          </div>
-        )}
-        
-        <button
-          onClick={onDelete}
-          className="absolute top-2 right-2 w-6 h-6 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors"
-        >
-          <X className="w-3 h-3" />
-        </button>
-      </CardContent>
-    </Card>
+          )}
+
+          <button
+            onClick={onDelete}
+            className="absolute top-2 right-2 w-6 h-6 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </CardContent>
+      </Card>
+
+      {/* Detected items */}
+      {photo.detectedItems && photo.detectedItems.length > 0 && (
+        <div className="space-y-1">
+          {photo.detectedItems.map((item, idx) => (
+            <div
+              key={idx}
+              className="flex items-center justify-between text-xs bg-muted/50 rounded px-2 py-1"
+            >
+              <span className="font-medium text-foreground">{item.raw_label}</span>
+              <div className="flex items-center gap-2">
+                {item.packaged && (
+                  <Badge variant="secondary" className="text-xs px-1 py-0">
+                    📦
+                  </Badge>
+                )}
+                <span className="text-muted-foreground">
+                  {Math.round(item.confidence * 100)}%
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 
   return (

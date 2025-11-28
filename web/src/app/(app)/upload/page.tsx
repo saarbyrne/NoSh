@@ -9,10 +9,17 @@ import Link from "next/link";
 import { createUploadUrl, processPhoto, savePhotoItems } from "@/lib/api";
 import { formatMonthYM, toIsoSeconds } from "@/lib/date";
 
+interface DetectedItem {
+  raw_label: string;
+  confidence: number;
+  packaged?: boolean;
+}
+
 interface Photo {
   id: string;
   url: string;
   file?: File;
+  detectedItems?: DetectedItem[];
 }
 
 export default function UploadPage() {
@@ -22,16 +29,17 @@ export default function UploadPage() {
 
   const handlePhotoUpload = async (file: File): Promise<Photo> => {
     const now = new Date();
-    
+
     // Create upload URL
     const res = await createUploadUrl({
       month_ym: formatMonthYM(now),
       taken_at: toIsoSeconds(now),
     });
-    
+
     const photo_id = (res as { photo_id?: string })?.photo_id;
     const signed_url = (res as { signed_url?: string })?.signed_url;
-    
+    const storage_path = (res as { storage_path?: string })?.storage_path;
+
     if (!photo_id || !signed_url) {
       throw new Error("Failed to get upload URL");
     }
@@ -42,14 +50,36 @@ export default function UploadPage() {
       headers: { "Content-Type": file.type },
       body: file,
     });
-    
+
     if (!putResp.ok) {
       throw new Error(`Upload failed: ${putResp.status}`);
     }
 
-    // Process photo
+    // Process photo with AI
     const photoUrl = signed_url?.includes("?") ? signed_url.split("?")[0] : signed_url;
     const result = await processPhoto({ photo_id, photo_url: photoUrl });
+
+    // Extract detected items from AI response
+    const items = (result as any)?.items || [];
+    const detectedItems: DetectedItem[] = items.map((item: any) => ({
+      raw_label: item.raw_label || item.label || "Unknown",
+      confidence: item.confidence || 0,
+      packaged: item.packaged || false,
+    }));
+
+    // Save detected items to database
+    if (detectedItems.length > 0) {
+      try {
+        await savePhotoItems(photo_id, detectedItems, {
+          taken_at: toIsoSeconds(now),
+          storage_path,
+        });
+        console.log(`Saved ${detectedItems.length} items for photo ${photo_id}`);
+      } catch (saveError) {
+        console.error("Failed to save photo items:", saveError);
+        // Continue anyway - we still show the items to the user
+      }
+    }
 
     // Create object URL for preview
     const objectUrl = URL.createObjectURL(file);
@@ -58,6 +88,7 @@ export default function UploadPage() {
       id: photo_id,
       url: objectUrl,
       file,
+      detectedItems,
     };
   };
 

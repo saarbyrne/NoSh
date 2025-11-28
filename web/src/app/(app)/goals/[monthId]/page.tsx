@@ -111,16 +111,16 @@ export default function GoalsPage({
     <RequireAuth>
       <div className="min-h-screen bg-background">
         <Header title={`Monthly Goals - ${monthId ? new Date(monthId + "-01").toLocaleDateString(undefined, { year: 'numeric', month: 'long' }) : 'Loading...'}`} />
-        <div className="pt-20 p-6 space-y-6">
+        <div className="pt-20 p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
           {/* Subtitle */}
           <div className="text-center">
-            <p className="text-sm text-muted">
+            <p className="text-sm text-muted-foreground">
               AI-generated personalized goals based on your food patterns
             </p>
           </div>
-          
+
           {/* Navigation */}
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-wrap justify-end gap-2">
             <Link href={`/day/${today}`}>
               <Button variant="outline" size="sm">
                 Today&apos;s Summary
@@ -153,7 +153,7 @@ export default function GoalsPage({
               <CardContent className="pt-6">
                 <div className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
-                  <p className="text-muted">Generating personalized goals...</p>
+                  <p className="text-muted-foreground">Generating personalized goals...</p>
                 </div>
               </CardContent>
             </Card>
@@ -178,26 +178,26 @@ export default function GoalsPage({
                     <CardContent className="space-y-4">
                       <div>
                         <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
-                          <span className="text-accent">Why</span>
+                          <span className="text-accent">💡 Why</span>
                           <Badge variant="secondary" className="text-xs">Motivation</Badge>
                         </h4>
-                        <p className="text-sm text-muted leading-relaxed">{goal.why}</p>
+                        <p className="text-sm text-foreground leading-relaxed">{goal.why}</p>
                       </div>
-                      
+
                       <div>
                         <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
-                          <span className="text-accent">How</span>
+                          <span className="text-accent">✅ How</span>
                           <Badge variant="secondary" className="text-xs">Strategy</Badge>
                         </h4>
-                        <p className="text-sm text-muted leading-relaxed">{goal.how}</p>
+                        <p className="text-sm text-foreground leading-relaxed">{goal.how}</p>
                       </div>
-                      
+
                       <div>
                         <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
-                          <span className="text-accent">Fallback</span>
+                          <span className="text-accent">🔄 Fallback</span>
                           <Badge variant="secondary" className="text-xs">Plan B</Badge>
                         </h4>
-                        <p className="text-sm text-muted leading-relaxed">{goal.fallback}</p>
+                        <p className="text-sm text-foreground leading-relaxed">{goal.fallback}</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -207,17 +207,17 @@ export default function GoalsPage({
               {/* Save Button */}
               <Card>
                 <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
                       <h3 className="font-medium">Save Your Goals</h3>
-                      <p className="text-sm text-muted">
+                      <p className="text-sm text-muted-foreground">
                         Save these goals to track your progress throughout the month
                       </p>
                     </div>
-                    <Button 
-                      onClick={handleSaveGoals} 
+                    <Button
+                      onClick={handleSaveGoals}
                       disabled={saving}
-                      className="min-w-[120px]"
+                      className="min-w-[120px] w-full sm:w-auto"
                     >
                       {saving ? (
                         <div className="flex items-center gap-2">
@@ -239,12 +239,12 @@ export default function GoalsPage({
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center space-y-4">
-                  <p className="text-muted">No goals generated yet.</p>
-                  <p className="text-sm text-muted">
+                  <p className="text-foreground">No goals generated yet.</p>
+                  <p className="text-sm text-muted-foreground">
                     Upload more photos to generate personalized goals based on your eating patterns.
                   </p>
                   <Link href="/upload">
-                    <Button>Upload Photo</Button>
+                    <Button className="w-full sm:w-auto">Upload Photo</Button>
                   </Link>
                 </div>
               </CardContent>

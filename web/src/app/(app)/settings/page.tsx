@@ -170,7 +170,7 @@ export default function SettingsPage() {
     return (
       <RequireAuth>
         <div className="min-h-screen bg-background">
-          <div className="p-6">
+          <div className="pt-20 p-4 sm:p-6 max-w-4xl mx-auto">
             <div className="animate-pulse space-y-4">
               <div className="h-8 bg-muted rounded w-1/3"></div>
               <div className="h-32 bg-muted rounded"></div>
@@ -185,7 +185,7 @@ export default function SettingsPage() {
   return (
     <RequireAuth>
       <div className="bg-background">
-        <div className="max-w-md mx-auto p-6 space-y-8">
+        <div className="pt-20 p-4 sm:p-6 max-w-4xl mx-auto space-y-8">
           {/* Header */}
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => window.history.back()}>

@@ -23,7 +23,7 @@ export default function DayPage({
     <RequireAuth>
       <div className="min-h-screen bg-background">
         <Header title={`Day Summary - ${new Date(date).toLocaleDateString()}`} />
-        <div className="pt-20 p-6">
+        <div className="pt-20 p-4 sm:p-6 max-w-4xl mx-auto">
           <DaySummary date={date} />
         </div>
       </div>

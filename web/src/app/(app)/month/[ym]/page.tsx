@@ -28,8 +28,8 @@ export default function MonthPage({
     <RequireAuth>
       <div className="min-h-screen bg-background">
         <Header title={`Monthly Summary - ${new Date(ym + "-01").toLocaleDateString(undefined, { year: 'numeric', month: 'long' })}`} />
-        <div className="pt-20 p-6 space-y-6">
-          <div className="flex justify-end gap-2">
+        <div className="pt-20 p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
+          <div className="flex flex-wrap justify-end gap-2">
             <Link href={`/day/${today}`}>
               <Button variant="outline" size="sm">
                 Today&apos;s Summary

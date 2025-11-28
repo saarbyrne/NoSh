@@ -104,7 +104,7 @@ export default function UploadPage() {
           }
         />
         
-        <div className="p-4">
+        <div className="pt-20 p-4 sm:p-6 max-w-4xl mx-auto">
           <PhotoUploadForm
             onPhotoUpload={handlePhotoUpload}
             onPhotoDelete={handlePhotoDelete}

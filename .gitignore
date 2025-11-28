@@ -57,3 +57,4 @@ venv/
 # Supabase
 supabase/.branches
 supabase/.temp
+.supabase-db-password

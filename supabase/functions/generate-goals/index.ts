@@ -35,7 +35,7 @@ serve(async (req: Request) => {
     if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { "Content-Type": "application/json" } });
     const totals = (ms as any)?.totals || {};
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
     const instructions = `You are a nutrition assistant. Based on these category totals for the past 3 days in month ${month_ym}, write 3 simple, actionable goals. Keep them realistic, specific, and kind.
 Totals JSON:
 ${JSON.stringify(totals)}

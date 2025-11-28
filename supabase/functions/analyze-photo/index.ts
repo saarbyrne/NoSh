@@ -41,7 +41,7 @@ serve(async (req: Request) => {
       });
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
     const prompt = `Identify foods/drinks in this image.\nReturn strict JSON:\n{\n  "photo_id": string,\n  "items": [\n    { "raw_label": string, "confidence": number, "packaged": boolean }\n  ]\n}\n- confidence is between 0 and 1\n- packaged=true if it's a commercial product`;
 
     const payload = {

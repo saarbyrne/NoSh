@@ -34,7 +34,7 @@ Unlike traditional nutrition apps that require manual logging of every meal, NoS
 - Identifies packaged vs. whole foods
 - Tracks meal timing (breakfast, lunch, dinner)
 
-### **🤖 Gemini 2.0 Flash AI Analysis**
+### **🤖 Gemini 2.0 Flash AI Analysis (Any AI model can be used)**
 - Vision AI identifies food items from photos
 - OCR reads nutrition labels on packaged foods
 - Maps detected items to fixed taxonomy (25+ categories)
